@@ -1,0 +1,102 @@
+-------------------------------------------------------------------------------
+                         OPEN|PHANTASY [CLIENT] README
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+TABLE OF CONTENTS
+-------------------------------------------------------------------------------
+1. INTRODUCTION
+1.1    PLATFORMS
+2. BUILDING
+2.1    OPENPANDORA
+
+-------------------------------------------------------------------------------
+1. INTRODUCTION
+-------------------------------------------------------------------------------
+Open|Phantasy is an Open Source Online Multiplayer Role Playing Game (OSOMRPG)
+
+-------------------------------------------------------------------------------
+1.1 PLATFORMS
+-------------------------------------------------------------------------------
+Proposed platforms to be supported are as follows:
+    * BlackBerry 10
+    * DOS
+    * Linux
+    * Nintendo DS
+    * OpenPandora
+    * OUYA
+    * SEGA Dreamcast
+    * Windows
+
+The list of platforms is an initial offering and open to expansion for more
+platforms should time and resources permit.  As it stands the main platforms to
+focus on are; Pandora, Linux, BlackBerry 10, and Windows, as these share common
+APIs or close to common variations.
+
+-------------------------------------------------------------------------------
+2. BUILDING
+-------------------------------------------------------------------------------
+This section describes the build instructions for the supported platforms.  As
+SDK installations can vary, this information can become incorrect over time.
+
+-------------------------------------------------------------------------------
+2.1 OPENPANDORA
+-------------------------------------------------------------------------------
+To build for the OpenPandora, you will need to follow the installation
+instructions from the OpenPandora boards: http://bit.ly/12jFlnY
+
+There may be issues related to pkg-config provided by the toolchain.  If you
+encounter an issue with pkg-config, un-comment lines 128 and 129:
+PKGCONFIG_VERSION=pkg-config-0.25
+PKGCONFIG_ARCHIVE_MD5=a3270bab3f4b69b7dc6dbdacbcae9745
+
+Then comment-out lines 130-131:
+#PKGCONFIG_VERSION=pkg-config-0.26
+#PKGCONFIG_ARCHIVE_MD5=47525c26a9ba7ba14bf85e01509a7234
+
+If anyone has successfully installed a version of this SDK on any other
+platforms, please contact El-Rico on GitHub to have the installation notes
+appended and to get some credit ;D.
+
+Before you continue to build, you will need the ZED library, available from:
+ftp://opengamedevelopers.org/projects/zed/builds
+From here, there will be a stable and unstable directory, depending on if you
+want the most bleeding-edge version that will most likely be bug-ridden, choose
+the unstable directory.  If, on the other hand, you want the least amount of
+bugs, opt for the stable directory.
+
+The next layer down is the library type, either a statically linked or
+dynamically linked library is provided.  Open|Phantasy for the OpenPandora is
+statically linked, so choose the static directory.
+
+From here, there is a selection of platforms to choose from.  pandora_linux
+will provide the correct libraries and header files for the stock Linux
+operating system which comes installed on the OpenPandora by default.
+
+Follow the directory tree down to arm/32/latest to obtain the latest files to
+build against.
+
+To build a stable version, use this URI:
+ftp://opengamedevelopers.org/projects/zed/builds/stable/static/pandora_linux/arm/32/latest
+
+Download the files to a directory you can access, such as ~/ZED.  When you have
+done this, set the ZEDSDK environment variable to point to this directory:
+$> export ZEDSDK="$HOME/ZED"
+
+You may want to set the ZEDSDK environment variable in your ~/.bashrc file to
+simplify the process of building Open|Phantasy in the future.
+
+Change into the Source/Pandora directory from the root of this Git repository:
+$> cd Source/Pandora
+
+Then run make:
+$> make
+
+Optionally, you can pass the debug, release, or profile build rules:
+$> make debug
+$> make release
+$> make profile
+
+It is recommended to create a release build, unless you are trying to gather
+metrics for profiling or wanting to attempt to re-create a bug with more
+information to send the development team.
