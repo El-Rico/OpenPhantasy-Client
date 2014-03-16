@@ -4,11 +4,7 @@
 
 ##### Make sure that the Angstrom ARM toolchain root was defined ##############
 ifeq ($(strip $(PNDSDK)),)
-$(error Please set PNDSDK to point to your Pandora toolchain root directory  )
-endif
-
-ifeq ($(strip $(ZEDSDK)),)
-$(error Please set ZEDSDK to point to your ZED SDK root directory )
+$(error Please set PNDSDK to point to your Pandora toolchain root directory)
 endif
 
 ifndef TOPDIR
@@ -17,12 +13,12 @@ export TOPSRC		= $(TOPDIR)/Source
 export TARGETDIR	= $(TOPDIR)/Bin/Pandora
 export OBJSDIR		= $(TOPDIR)/Obj/Pandora/$(GCCVER)/$(BUILD)
 endif
-SOURCEDIR	= Source ../Common/Source ../Common/Source/OGLES2
+SOURCEDIR	= Source ../Common/Source
 
 TARGET := OpenPhantasy
 OUTFILE	= $(TARGETDIR)/$(TARGET)
 
-TOOL_PREFIX = pandora-
+TOOL_PREFIX = $(PNDSDK)/bin/pandora-
 
 BUILD_PLATFORM	= PANDORA
 PLATFORM		= Pandora
@@ -44,9 +40,9 @@ CPPFLAGS_EXT=	-ffriend-injection -std=c++0x -mcpu=cortex-a8 \
 				-Wa,-mcpu=cortex-a8 -mfpu=neon -Wa,-mfpu=neon \
 				-mfloat-abi=softfp
 SYSIPATH	=	-idirafter $(PNDSDK)/usr/include
-INCPATH		=	-I$(ZEDSDK)/include/Pandora
+INCPATH		=
 SYSLPATH	=	-L$(PNDSDK)/usr/lib
-LIBPATH		=	-L$(ZEDSDK)/lib/Pandora_Linux/arm/32
+LIBPATH		=
 SYSLIBS		=	-lX11 -lGLESv2 -lEGL -lrt -lc -lIMGegl -lXau -lXdmcp -lsrv_um
 LINKFLAGS	=
 
@@ -56,7 +52,7 @@ debug:		BUILD_TYPE	= debug
 debug:		BUILD_DEF	= DEBUG
 debug:		TARGET := $(TARGET)D
 debug:		CPPFLAGS += -g -ggdb -Wall -D_DEBUG $(CPPFLAGS_EXT)
-debug:		LIBS = -lZEDRendererD -lZEDArithmeticD -lZEDSystemD
+debug:		LIBS =
 debug:		$(TARGET)
 
 ##### Release #####
@@ -82,6 +78,7 @@ ifneq ($(OBJSDIR), $(CURDIR))
 VERSIONINFO:
 	@printf "%s" "------------------------- Generating Version Information ---"
 	@printf "%s\n" "-------------------"
+	@mkdir -p ./Headers
 	@sh ./GitVersion.sh ./Headers/GitVersion.hpp
 	@printf "%s" "------------------------------------------------------------"
 	@printf "%s\n" "-------------------"
@@ -98,7 +95,7 @@ export OBJS		:= $(CPPFILES:.cpp=.o)
 
 $(TARGET): OBJSDIR TARGETDIR VERSIONINFO
 	@/usr/bin/time -f "%E" -o $(OBJSDIR)/compiletime $(MAKE) \
-	--no-print-directory -C $(OBJSDIR) -f $(TOPSRC)/Pandora/Makefile \
+	--no-print-directory -C $(OBJSDIR) -f $(TOPSRC)/$(PLATFORM)/Makefile \
 	$(BUILD_TYPE)
 	@printf "\n%s" "----------------------------------------------------------"
 	@printf "%s\n" "---------------------"
