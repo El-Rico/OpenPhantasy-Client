@@ -3,10 +3,13 @@
 #include <GitVersion.hpp>
 #include <cstring>
 #include <unistd.h>
+#include <Renderer/OGL/GLFont.hpp>
+#include <System/OS.hpp>
 
 namespace OpenPhantasyClient
 {
-	Game::Game( )
+	Game::Game( ) :
+		m_pOSName( ZED_NULL )
 	{
 		m_pWindow = ZED_NULL;
 		m_pRenderer = ZED_NULL;
@@ -21,6 +24,7 @@ namespace OpenPhantasyClient
 		zedSafeDelete( m_pInputManager );
 		zedSafeDelete( m_pRenderer );
 		zedSafeDelete( m_pWindow );
+		zedSafeDeleteArray( m_pOSName );
 	}
 
 	ZED_UINT32 Game::Initialise( )
@@ -72,9 +76,9 @@ namespace OpenPhantasyClient
 			return ZED_FAIL;
 		}
 
-		float Red = 32.0f / 255.0f;
-		float Green = 129.0f / 255.0f;
-		float Blue = 160.0f / 255.0f;
+		float Red = 21.0f / 255.0f;
+		float Green = 114.0f / 255.0f;
+		float Blue = 179.0f / 255.0f;
 
 		m_pRenderer->ClearColour( Red, Green, Blue );
 		m_pRenderer->RenderState( ZED_RENDERSTATE_CULLMODE,
@@ -111,6 +115,27 @@ namespace OpenPhantasyClient
 #endif
 
 		m_pWindow->Title( Title );
+
+		m_pFont = new ZED::Renderer::GLFont( m_pRenderer );
+
+		if( m_pFont->Load( "test.zed" ) != ZED_OK )
+		{
+			return ZED_FAIL;
+		}
+
+		m_pFont->SetViewport( 0.0f, 0.0f, 
+			static_cast< ZED_FLOAT32 >( m_Canvas.Width( ) ),
+			static_cast< ZED_FLOAT32 >( m_Canvas.Height( ) ) );
+
+		m_Text.SetFont( m_pFont );
+
+		if( ZED::System::GetOSFullName( &m_pOSName ) != ZED_OK )
+		{
+			zedTrace( "[OpenPhantasyClient::Game::Initialise] <ERROR> "
+				"Failed to retreive the operating system name\n" );
+
+			return ZED_FAIL;
+		}
 
 		return ZED_OK;
 	}
@@ -158,6 +183,30 @@ namespace OpenPhantasyClient
 	void Game::Render( )
 	{
 		m_pRenderer->BeginScene( ZED_TRUE, ZED_TRUE, ZED_TRUE );
+		ZED_FLOAT32 TextWidth, TextHeight;
+		m_Text.MeasureString( &TextWidth, &TextHeight,
+			"Open|Phantasy [Ver. %s]", GIT_BUILD_VERSION);
+		ZED_FLOAT32 TextX =
+			static_cast< ZED_FLOAT32 >( m_Canvas.Width( ) ) / 2.0f;
+		ZED_FLOAT32 TextY =
+			static_cast< ZED_FLOAT32 >( m_Canvas.Height( ) );
+
+		TextX -= ( TextWidth / 2.0f );
+		TextY -= ( TextHeight ) * 2.5f;
+
+		m_Text.Render( TextX, TextY, "Open|Phantasy [Ver. %s]",
+			GIT_BUILD_VERSION );
+
+		TextX = static_cast< ZED_FLOAT32 >( m_Canvas.Width( ) ) / 2.0f;
+		TextY = static_cast< ZED_FLOAT32 >( m_Canvas.Height( ) );
+
+		m_Text.MeasureString( &TextWidth, &TextHeight, "%s", m_pOSName );
+
+		TextX -= ( TextWidth / 2.0f );
+		TextY -= ( TextHeight );
+
+		m_Text.Render( TextX, TextY, "%s", m_pOSName );
+
 		m_pRenderer->EndScene( );
 	}
 }

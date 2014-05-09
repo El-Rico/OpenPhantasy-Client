@@ -1,5 +1,5 @@
-#ifndef ___GAME_HPP__
-#define ___GAME_HPP__
+#ifndef __OPENPHANTASYCLIENT_GAME_HPP__
+#define __OPENPHANTASYCLIENT_GAME_HPP__
 
 #include <System/DataTypes.hpp>
 #include <System/Window.hpp>
@@ -8,6 +8,8 @@
 #include <Renderer/Renderer.hpp>
 #include <Renderer/CanvasDescription.hpp>
 #include <Configuration.hpp>
+#include <Renderer/Text.hpp>
+#include <Renderer/Font.hpp>
 
 namespace OpenPhantasyClient
 {
@@ -32,9 +34,12 @@ namespace OpenPhantasyClient
 		ZED::Renderer::CanvasDescription	m_Canvas;
 		Configuration						m_GameConfiguration;
 
-		ZED_BOOL	m_Running;
+		ZED_BOOL			m_Running;
+		ZED::Renderer::Font	*m_pFont;
+		ZED::Renderer::Text	m_Text;
+		ZED_CHAR8			*m_pOSName;
 	};
 }
 
-#endif
+#endif // __OPENPHANTASYCLIENT_GAME_HPP__
 
