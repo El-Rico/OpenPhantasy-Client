@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <Renderer/OGL/GLFont.hpp>
 #include <System/OS.hpp>
+#include <System/Time.hpp>
 
 namespace OpenPhantasyClient
 {
@@ -206,6 +207,37 @@ namespace OpenPhantasyClient
 		TextY -= ( TextHeight );
 
 		m_Text.Render( TextX, TextY, "%s", m_pOSName );
+
+		ZED::System::BEAT_TIME BeatTime;
+
+		ZED::System::GetBeatTime( BeatTime );
+
+		TextX = 5.0f;
+		TextY = static_cast< ZED_FLOAT32 >( m_Canvas.Height( ) ) - 5.0f;
+		
+		m_Text.Render( TextX, TextY, "@%03d", BeatTime.Beat );
+
+		ZED_COLOUR TextColour = { 0.0f, 1.0f, 0.0f, 1.0f };
+		m_pFont->SetForegroundColour( TextColour );
+
+		ZED_FLOAT32 DotWidth = 0.0f;
+		
+		m_Text.MeasureString( &DotWidth, ZED_NULL, "." );
+
+		m_Text.MeasureString( &TextWidth, &TextHeight, "@%03d",
+			BeatTime.Beat );
+
+		TextY = static_cast< ZED_FLOAT32 >( m_Canvas.Height( ) ) - 2.0f;
+
+		for( ZED_UINT32 i = 0; i < BeatTime.CentiBeat; ++i )
+		{
+			m_Text.Render( TextX, TextY, "." );
+			TextX += DotWidth;
+		}
+
+		TextColour = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+		m_pFont->SetForegroundColour( TextColour );
 
 		m_pRenderer->EndScene( );
 	}
