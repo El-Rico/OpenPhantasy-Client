@@ -70,7 +70,7 @@ SYSIPATH	=
 INCPATH		=	-I$(ZEDSDK)/include/Linux
 SYSLPATH	=	
 LIBPATH		=	-L$(ZEDSDK)/lib/Linux/$(ARCH)/$(BITSIZE)
-SYSLIBS		=	-lX11 -lGL -lXrandr -lrt -pthread
+SYSLIBS		=	-lX11 -lGL -lXrandr -lrt -pthread -lXi
 LINKFLAGS	=
 
 ##### Debug #######
@@ -79,7 +79,7 @@ debug:		BUILD_TYPE	= debug
 debug:		BUILD_DEF	= DEBUG
 debug:		TARGET := $(TARGET)D
 debug:		CPPFLAGS += -g -ggdb -Wall -D_DEBUG $(CPPFLAGS_EXT)
-debug:		LIBS = -lZEDUtilityD -lZEDRendererD -lZEDArithmeticD -lZEDSystemD
+debug:		LIBS = -lZEDRendererD -lZEDArithmeticD -lZEDGameD -lZEDUtilityD -lZEDArithmeticD -lZEDSystemD
 debug:		$(TARGET)
 
 ##### Release #####

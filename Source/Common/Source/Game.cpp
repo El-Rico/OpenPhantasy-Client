@@ -6,6 +6,10 @@
 #include <Renderer/OGL/GLFont.hpp>
 #include <System/OS.hpp>
 #include <System/Time.hpp>
+#include <GameStateManager.hpp>
+#include <GameplayGameState.hpp>
+#include <Utility/EventRouter.hpp>
+#include <Utility/Events.hpp>
 
 namespace OpenPhantasyClient
 {
@@ -87,7 +91,7 @@ namespace OpenPhantasyClient
 		m_pRenderer->RenderState( ZED_RENDERSTATE_DEPTH, ZED_ENABLE );
 		ZED::System::WINDOWDATA WindowData = m_pWindow->WindowData( );
 
-		if( m_pInputManager->SetWindowData( WindowData ) != ZED_OK )
+		if( m_pInputManager->Initialise( WindowData ) != ZED_OK )
 		{
 			zedTrace( "[OpenPhantasyClient::Game::Initialise] <ERROR> "
 				"Failed to set window data for the new input manager\n" );
@@ -138,11 +142,55 @@ namespace OpenPhantasyClient
 			return ZED_FAIL;
 		}
 
+		if( GameStateManager::GetInstance( ).SetRenderer( m_pRenderer ) !=
+			ZED_OK )
+		{
+			zedTrace( "[OpenPhantasyClient::Game::Initialise] <ERROR> "
+				"Could not set the game state manager's Renderer\n" );
+
+			return ZED_FAIL;
+		}
+
+		if( GameStateManager::GetInstance( ).Initialise( ) != ZED_OK )
+		{
+			zedTrace( "[OpenPhantasyClient::Game::Initialise] <ERROR> "
+				"Unable to initialise game state manager\n" );
+
+			return ZED_FAIL;
+		}
+
+		GameStateManager::GetInstance( ).SetWindowDimensions(
+			m_pWindow->GetWidth( ), m_pWindow->GetHeight( ) );
+
 		return ZED_OK;
 	}
 
 	ZED_UINT32 Game::Execute( )
 	{
+		GameplayGameState *pGameplay = new GameplayGameState( );
+		GameStateManager::GetInstance( ).RegisterState( pGameplay );
+
+		if( GameStateManager::GetInstance( ).PushState( "Gameplay" ) !=
+			ZED_OK )
+		{
+			zedTrace( "[OpenPhantasyClient::Game::Execute] <ERROR> "
+				"Failed to push state \"Gameplay\"\n" );
+			return ZED_FAIL;
+		}
+
+		ZED_KEYBOARDSTATE PreviousKeyboardState;
+		memset( &PreviousKeyboardState, 0, sizeof( PreviousKeyboardState ) );
+		ZED_MEMSIZE KeyCount = sizeof( PreviousKeyboardState ) /
+			sizeof( PreviousKeyboardState.Key[ 0 ] );
+
+		ZED::Utility::ResolutionChangeEventData ResolutionData;
+		ResolutionData.SetResolution( m_pWindow->GetWidth( ),
+			m_pWindow->GetHeight( ) );
+
+		ZED::Utility::ResolutionChangeEvent Resolution( &ResolutionData );
+
+		ZED::Utility::SendEvent( Resolution );
+
 		m_Running = ZED_TRUE;
 
 		while( m_Running )
@@ -151,10 +199,21 @@ namespace OpenPhantasyClient
 			m_pInputManager->Update( );
 			m_pWindow->FlushEvents( ZED_WINDOW_FLUSH_NONE );
 
+			ZED_KEYBOARDSTATE NewKeyboardState;
+			m_Keyboard.State( &NewKeyboardState );
+
 			if( m_pWindow->Resized( ) )
 			{
 				m_GameConfiguration.SetWidth( m_pWindow->GetWidth( ) );
 				m_GameConfiguration.SetHeight( m_pWindow->GetHeight( ) );
+
+				ZED::Utility::ResolutionChangeEventData ResolutionData;
+				ResolutionData.SetResolution( m_pWindow->GetWidth( ),
+					m_pWindow->GetHeight( ) );
+				ZED::Utility::ResolutionChangeEvent Resolution(
+					&ResolutionData );
+
+				ZED::Utility::SendEvent( Resolution );
 			}
 
 			if( m_pWindow->Moved( ) )
@@ -163,13 +222,39 @@ namespace OpenPhantasyClient
 				m_GameConfiguration.SetYPosition( m_pWindow->GetYPosition( ) );
 			}
 
-			if( m_Keyboard.IsKeyDown( ZED_KEY_ESCAPE ) )
+			for( ZED_MEMSIZE i = 0; i < KeyCount; ++i )
+			{
+				ZED_KEY ZEDKey = static_cast< ZED_KEY >( i );
+
+				if( ( NewKeyboardState.Key[ i ] !=
+						PreviousKeyboardState.Key[ i ] ) ||
+					( NewKeyboardState.Key[ i ] == 1 &&
+						PreviousKeyboardState.Key[ i ] == 1 ) )
+				{
+					ZED::Utility::KeyboardInputEventData KeyboardData;
+					KeyboardData.SetState( ZEDKey,
+						NewKeyboardState.Key[ i ] );
+
+					ZED::Utility::KeyboardEvent Keyboard( &KeyboardData );
+					ZED::Utility::SendEvent( Keyboard );
+				}
+			}
+
+			// For emergency use only!
+			if( m_Keyboard.IsKeyDown( ZED_KEY_F12 ) )
 			{
 				m_Running = ZED_FALSE;
 			}
-			
-			this->Update( 16667ULL );
-			this->Render( );
+
+			GameStateManager::GetInstance( ).Execute( );
+
+			if( GameStateManager::GetInstance( ).IsRunning( ) == ZED_FALSE )
+			{
+				m_Running = ZED_FALSE;
+			}
+
+			memcpy( &PreviousKeyboardState, &NewKeyboardState,
+				sizeof( PreviousKeyboardState ) );
 		}
 
 		m_GameConfiguration.Write( );
@@ -195,8 +280,8 @@ namespace OpenPhantasyClient
 		TextX -= ( TextWidth / 2.0f );
 		TextY -= ( TextHeight ) * 2.5f;
 
-		m_Text.Render( TextX, TextY, "Open|Phantasy [Ver. %s]",
-			GIT_BUILD_VERSION );
+		m_Text.Render( TextX, TextY, "Open|Phantasy [Ver. %s] //%s",
+			GIT_BUILD_VERSION, GIT_TAG_NAME );
 
 		TextX = static_cast< ZED_FLOAT32 >( m_Canvas.Width( ) ) / 2.0f;
 		TextY = static_cast< ZED_FLOAT32 >( m_Canvas.Height( ) );
@@ -231,7 +316,20 @@ namespace OpenPhantasyClient
 
 		for( ZED_UINT32 i = 0; i < BeatTime.CentiBeat; ++i )
 		{
-			m_Text.Render( TextX, TextY, "." );
+			if( ( i % 10 ) == 0 )
+			{
+				TextColour = { 1.0f, 1.0f, 0.0f, 1.0f };
+				m_pFont->SetForegroundColour( TextColour );
+
+				m_Text.Render( TextX, TextY, "." );
+
+				TextColour = { 0.0f, 1.0f, 0.0f, 1.0f };
+				m_pFont->SetForegroundColour( TextColour );
+			}
+			else
+			{
+				m_Text.Render( TextX, TextY, "." );
+			}
 			TextX += DotWidth;
 		}
 
